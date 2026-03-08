@@ -1,0 +1,8 @@
+{
+  "name": "Culinaria Editorial",
+  "description": "A luxury editorial recipe discovery and management platform.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
