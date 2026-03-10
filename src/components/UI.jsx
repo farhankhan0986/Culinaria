@@ -45,7 +45,7 @@ export function Card({ children, className = "", featured = false }) {
 
 export function GridLines() {
   return (
-    <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden">
+    <div className="fixed hidden lg:block inset-0 pointer-events-none z-40 overflow-hidden">
       <div className="h-full max-w-[1600px] mx-auto grid grid-cols-4 px-8 md:px-16">
         <div className="border-l border-charcoal/5 h-full" />
         <div className="border-l border-charcoal/5 h-full" />
