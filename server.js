@@ -288,6 +288,48 @@ async function startServer() {
   }
 });
 
+  app.post("/api/recipes/:id/rate", authenticate, async (req, res) => {
+  try {
+    const recipeId = req.params.id;
+    const userId = req.user.id;
+    const { rating, comment } = req.body;
+
+    const recipe = await Recipe.findById(recipeId);
+
+    if (!recipe) {
+      return res.status(404).json({ error: "Recipe not found" });
+    }
+
+    const existingRating = recipe.ratings.find(
+      (r) => r.user.toString() === userId
+    );
+
+    if (existingRating) {
+      existingRating.rating = rating;
+      existingRating.comment = comment;
+    } else {
+      recipe.ratings.push({
+        user: userId,
+        rating,
+        comment,
+      });
+    }
+
+    await recipe.save();
+
+    const updatedRecipe = await Recipe.findById(recipeId).populate(
+      "author",
+      "name"
+    );
+
+    res.json(updatedRecipe);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
   /* ===============================
      AI Routes
   ================================ */
