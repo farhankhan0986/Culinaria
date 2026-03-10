@@ -14,6 +14,7 @@ import { UserProfileModal } from "./components/modals/UserProfileModal";
 import { AiChatModal } from "./components/modals/AiChatModal";
 
 export default function App() {
+  const API_BASE = "https://culinaria-j6we.onrender.com";
   const [recipes, setRecipes] = useState([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
@@ -102,7 +103,7 @@ export default function App() {
   const handleAuth = async (e) => {
     e.preventDefault();
     const endpoint =
-      authMode === "login" ? "https://culinaria-j6we.onrender.com/api/auth/login" : "https://culinaria-j6we.onrender.com/api/auth/signup";
+      authMode === "login" ? `${API_BASE}/api/auth/login` : `${API_BASE}/api/auth/signup`;
     try {
       const res = await fetch(endpoint, {
         method: "POST",
@@ -138,7 +139,7 @@ export default function App() {
     if (!user) return setAuthMode("login");
 
     try {
-      const res = await fetch(`https://culinaria-j6we.onrender.com/api/recipes/${recipeId}/favorite`, {
+      const res = await fetch(`${API_BASE}/api/recipes/${recipeId}/favorite`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -171,7 +172,7 @@ export default function App() {
     setIsAiThinking(true);
 
     try {
-      const res = await fetch("https://culinaria-j6we.onrender.com/api/ai/chat", {
+      const res = await fetch(`${API_BASE}/api/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMsg, history }),
@@ -197,7 +198,7 @@ export default function App() {
   const submitRating = async (recipeId) => {
     if (!user) return setAuthMode("login");
     try {
-      const res = await fetch( `https://culinaria-j6we.onrender.com/api/recipes/${recipeId}/rate`, {
+      const res = await fetch(`${API_BASE}/api/recipes/${recipeId}/rate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -225,7 +226,7 @@ export default function App() {
       const cuiParam =
         activeCuisine === "All" ? "" : `&cuisine=${activeCuisine}`;
       const res = await fetch(
-        `https://culinaria-j6we.onrender.com/api/recipes?search=${search}${catParam}${cuiParam}`,
+        `${API_BASE}/api/recipes?search=${search}${catParam}${cuiParam}`,
       );
 
       if (!res.ok) {
@@ -247,14 +248,14 @@ export default function App() {
     setIsGenerating(true);
     setIsAiModalOpen(false);
     try {
-      const res = await fetch("https://culinaria-j6we.onrender.com/api/ai/generate", {
+      const res = await fetch(`${API_BASE}/api/ai/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: aiPrompt }),
       });
       const recipeData = await res.json();
 
-      const saveRes = await fetch("https://culinaria-j6we.onrender.com/api/recipes", {
+      const saveRes = await fetch(`${API_BASE}/api/recipes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...recipeData, author_id: user?.id }),
@@ -311,7 +312,7 @@ export default function App() {
         author_id: user?.id,
       };
 
-      const res = await fetch("https://culinaria-j6we.onrender.com/api/recipes", {
+      const res = await fetch(`${API_BASE}/api/recipes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedRecipe),

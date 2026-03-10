@@ -56,7 +56,7 @@ export function RecipeList({
                         <AnimatePresence mode="popLayout">
                             {currentRecipes.map((recipe, idx) => (
                                 <motion.div
-                                    key={recipe._id}
+                                    key={recipe._id || recipe.id}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95 }}

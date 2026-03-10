@@ -124,9 +124,7 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(cors({
-  origin: "*"
-}));
+  app.use(cors());
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
@@ -258,6 +256,37 @@ async function startServer() {
       res.status(500).json({ error: err.message });
     }
   });
+
+    app.post("/api/recipes/:id/favorite", authenticate, async (req, res) => {
+  try {
+    const recipeId = req.params.id;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const index = user.favorites.indexOf(recipeId);
+
+    if (index === -1) {
+      user.favorites.push(recipeId);
+    } else {
+      user.favorites.splice(index, 1);
+    }
+
+    await user.save();
+
+    res.json({
+      favorites: user.favorites
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
   /* ===============================
      AI Routes
