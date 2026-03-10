@@ -257,6 +257,46 @@ async function startServer() {
     }
   });
 
+  app.post("/api/recipes", async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      ingredients,
+      steps,
+      cooking_time,
+      servings,
+      difficulty,
+      category,
+      cuisine,
+      image_url,
+      author_id
+    } = req.body;
+
+    const recipe = new Recipe({
+      title,
+      description,
+      ingredients,
+      steps,
+      cooking_time,
+      servings,
+      difficulty,
+      category,
+      cuisine,
+      image_url,
+      author: author_id || null
+    });
+
+    await recipe.save();
+
+    res.json(recipe);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create recipe" });
+  }
+});
+
     app.post("/api/recipes/:id/favorite", authenticate, async (req, res) => {
   try {
     const recipeId = req.params.id;
