@@ -63,7 +63,7 @@ export function ImageReveal({ src, alt, className = "", aspect = "aspect-[3/4]" 
         src={src}
         alt={alt}
         referrerPolicy="no-referrer"
-        className="w-full h-full object-cover grayscale group-hover:grayscale-0 scale-100 group-hover:scale-105 transition-all duration-[2000ms] ease-out"
+        className="w-full h-full object-cover scale-100 group-hover:scale-105 group-active:scale-105 transition-all duration-[2000ms] ease-out"
       />
       <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)] pointer-events-none" />
     </div>
