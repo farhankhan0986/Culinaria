@@ -85,18 +85,70 @@ Groq AI API (LLM)
 
 ```
 Culinaria/
+│
+├── public/
+│   └── images/
+│       ├── culinaria-preview.png
+│       └── recipe-placeholder.jpg
+│
 ├── src/
+│
+│   ├── assets/
+│   │   ├── icons/
+│   │   │   ├── chef.svg
+│   │   │   ├── heart.svg
+│   │   │   └── star.svg
+│   │   └── images/
+│   │       └── hero-food.jpg
+│   │
 │   ├── components/
+│   │
 │   │   ├── UI/
+│   │   │   ├── GridLines.jsx
+│   │   │   ├── Button.jsx
+│   │   │   └── Loader.jsx
+│   │   │
 │   │   ├── Navbar/
+│   │   │   └── Navbar.jsx
+│   │   │
+│   │   ├── Hero/
+│   │   │   └── Hero.jsx
+│   │   │
 │   │   ├── RecipeList/
+│   │   │   ├── RecipeList.jsx
+│   │   │   └── RecipeCard.jsx
+│   │   │
+│   │   ├── Footer/
+│   │   │   └── Footer.jsx
+│   │   │
 │   │   └── modals/
+│   │       ├── CreateRecipeModal.jsx
+│   │       ├── RecipeDetailModal.jsx
+│   │       ├── CookingModeModal.jsx
+│   │       ├── AiGenerationModal.jsx
+│   │       ├── AiChatModal.jsx
+│   │       ├── AuthModal.jsx
+│   │       └── UserProfileModal.jsx
+│   │
 │   ├── data/
 │   │   └── initialRecipes.js
-│   ├── assets/
-│   └── App.jsx
-├── server.js
+│   │
+│   ├── styles/
+│   │   ├── globals.css
+│   │   └── tailwind.css
+│   │
+│   ├── utils/
+│   │   ├── api.js
+│   │   └── helpers.js
+│   │
+│   ├── App.jsx
+│   └── main.jsx
+│
+├── .env.example
+├── .gitignore
 ├── package.json
+├── vite.config.js
+├── server.js
 └── README.md
 ```
 
