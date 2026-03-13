@@ -59,7 +59,12 @@ const UserSchema = new mongoose.Schema({
 const RecipeSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
-  ingredients: [String],
+  ingredients: [
+  {
+    name: String,
+    quantity: String
+  }
+],
   steps: [String],
   cooking_time: Number,
   servings: Number,
@@ -233,7 +238,7 @@ async function startServer() {
       if (search) {
         filter.$or = [
           { title: { $regex: search, $options: "i" } },
-          { ingredients: { $regex: search, $options: "i" } },
+          { "ingredients.name": { $regex: search, $options: "i" } },
           { cuisine: { $regex: search, $options: "i" } },
           { category: { $regex: search, $options: "i" } },
         ];
@@ -259,115 +264,122 @@ async function startServer() {
 
   app.post("/api/recipes", async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      ingredients,
-      steps,
-      cooking_time,
-      servings,
-      difficulty,
-      category,
-      cuisine,
-      image_url,
-      author_id
-    } = req.body;
+
+    const title = req.body.title || req.body.recipe_name;
+
+    const steps =
+      req.body.steps ||
+      (req.body.instructions
+        ? req.body.instructions.map((i) => i.action)
+        : []);
+
+    const cooking_time = req.body.cooking_time
+      ? parseInt(req.body.cooking_time)
+      : null;
 
     const recipe = new Recipe({
       title,
-      description,
-      ingredients,
+      description: req.body.description || "",
+
+      ingredients: req.body.ingredients || [],
+
       steps,
+
       cooking_time,
-      servings,
-      difficulty,
-      category,
-      cuisine,
-      image_url,
-      author: author_id || null
+
+      servings: req.body.servings || null,
+      difficulty: req.body.difficulty || "",
+      category: req.body.category || "",
+      cuisine: req.body.cuisine || "",
+      image_url: req.body.image_url || "",
+
+      author: req.body.author_id || null
     });
 
     await recipe.save();
 
-    res.json(recipe);
+    res.status(201).json(recipe);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to create recipe" });
-  }
-});
-
-    app.post("/api/recipes/:id/favorite", authenticate, async (req, res) => {
-  try {
-    const recipeId = req.params.id;
-    const userId = req.user.id;
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const index = user.favorites.indexOf(recipeId);
-
-    if (index === -1) {
-      user.favorites.push(recipeId);
-    } else {
-      user.favorites.splice(index, 1);
-    }
-
-    await user.save();
-
-    res.json({
-      favorites: user.favorites
+    console.error("Recipe creation error:", err);
+    res.status(500).json({
+      error: "Failed to create recipe",
+      details: err.message
     });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
   }
 });
+
+  app.post("/api/recipes/:id/favorite", authenticate, async (req, res) => {
+    try {
+      const recipeId = req.params.id;
+      const userId = req.user.id;
+
+      const user = await User.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const index = user.favorites.indexOf(recipeId);
+
+      if (index === -1) {
+        user.favorites.push(recipeId);
+      } else {
+        user.favorites.splice(index, 1);
+      }
+
+      await user.save();
+
+      res.json({
+        favorites: user.favorites
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
 
   app.post("/api/recipes/:id/rate", authenticate, async (req, res) => {
-  try {
-    const recipeId = req.params.id;
-    const userId = req.user.id;
-    const { rating, comment } = req.body;
+    try {
+      const recipeId = req.params.id;
+      const userId = req.user.id;
+      const { rating, comment } = req.body;
 
-    const recipe = await Recipe.findById(recipeId);
+      const recipe = await Recipe.findById(recipeId);
 
-    if (!recipe) {
-      return res.status(404).json({ error: "Recipe not found" });
+      if (!recipe) {
+        return res.status(404).json({ error: "Recipe not found" });
+      }
+
+      const existingRating = recipe.ratings.find(
+        (r) => r.user.toString() === userId
+      );
+
+      if (existingRating) {
+        existingRating.rating = rating;
+        existingRating.comment = comment;
+      } else {
+        recipe.ratings.push({
+          user: userId,
+          rating,
+          comment,
+        });
+      }
+
+      await recipe.save();
+
+      const updatedRecipe = await Recipe.findById(recipeId).populate(
+        "author",
+        "name"
+      );
+
+      res.json(updatedRecipe);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error" });
     }
-
-    const existingRating = recipe.ratings.find(
-      (r) => r.user.toString() === userId
-    );
-
-    if (existingRating) {
-      existingRating.rating = rating;
-      existingRating.comment = comment;
-    } else {
-      recipe.ratings.push({
-        user: userId,
-        rating,
-        comment,
-      });
-    }
-
-    await recipe.save();
-
-    const updatedRecipe = await Recipe.findById(recipeId).populate(
-      "author",
-      "name"
-    );
-
-    res.json(updatedRecipe);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
+  });
 
 
   /* ===============================
@@ -407,51 +419,51 @@ async function startServer() {
 
 
   app.post("/api/ai/chat", async (req, res) => {
-  try {
-    const { message, history } = req.body;
+    try {
+      const { message, history } = req.body;
 
-    const messages = [
-      {
-        role: "system",
-        content:
-          "You are an expert culinary AI assistant helping chefs with recipes, cooking techniques, and ingredients.",
-      },
-      ...history.map((m) => ({
-        role: m.role === "bot" ? "assistant" : "user",
-        content: m.text,
-      })),
-      {
-        role: "user",
-        content: message,
-      },
-    ];
+      const messages = [
+        {
+          role: "system",
+          content:
+            "You are an expert culinary AI assistant helping chefs with recipes, cooking techniques, and ingredients.",
+        },
+        ...history.map((m) => ({
+          role: m.role === "bot" ? "assistant" : "user",
+          content: m.text,
+        })),
+        {
+          role: "user",
+          content: message,
+        },
+      ];
 
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages,
-    });
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages,
+      });
 
-    const text = completion.choices[0]?.message?.content || "No response";
+      const text = completion.choices[0]?.message?.content || "No response";
 
-    res.json({ text });
-  } catch (err) {
-    console.error("AI chat error:", err);
-    res.status(500).json({ error: "AI chat failed" });
-  }
-});
+      res.json({ text });
+    } catch (err) {
+      console.error("AI chat error:", err);
+      res.status(500).json({ error: "AI chat failed" });
+    }
+  });
 
   /* ===============================
      Vite Middleware
   ================================ */
 
   if (process.env.NODE_ENV !== "production") {
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: "spa",
-  });
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
 
-  app.use(vite.middlewares);
-}
+    app.use(vite.middlewares);
+  }
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
