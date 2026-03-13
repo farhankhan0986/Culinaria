@@ -364,17 +364,17 @@ async function startServer() {
     );
 
     if (existingRating) {
-      existingRating.rating = rating;
-      existingRating.comment = comment;
-    } else {
-      recipe.ratings.push({
-        user: userId,
-        rating,
-        comment,
-      });
-    }
+  existingRating.rating = rating;
+  existingRating.comment = comment;
+} else {
+  recipe.ratings.push({
+    user: userId,
+    rating,
+    comment
+  });
+}
 
-    await recipe.save();
+await recipe.save({ validateBeforeSave: false });
 
     const updatedRecipe = await Recipe.findById(recipeId).populate(
       "author",
