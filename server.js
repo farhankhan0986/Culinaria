@@ -60,11 +60,11 @@ const RecipeSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
   ingredients: [
-  {
-    name: String,
-    quantity: String
-  }
-],
+    {
+      name: String,
+      quantity: String
+    }
+  ],
   steps: [String],
   cooking_time: Number,
   servings: Number,
@@ -74,16 +74,16 @@ const RecipeSchema = new mongoose.Schema({
   image_url: String,
   author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   ratings: {
-  type: [
-    {
-      user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      rating: Number,
-      comment: String,
-      date: { type: Date, default: Date.now },
-    },
-  ],
-  default: [],
-},
+    type: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        rating: Number,
+        comment: String,
+        date: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  },
   created_at: { type: Date, default: Date.now },
 });
 
@@ -265,52 +265,52 @@ async function startServer() {
     }
   });
 
- app.post("/api/recipes", async (req, res) => {
-  try {
+  app.post("/api/recipes", async (req, res) => {
+    try {
 
-    const title =
-      req.body.title ||
-      req.body.recipe_name ||
-      req.body.name ||
-      "Untitled Recipe";
+      const title =
+        req.body.title ||
+        req.body.recipe_name ||
+        req.body.name ||
+        "Untitled Recipe";
 
-    const steps =
-      req.body.steps ||
-      req.body.instructions ||
-      [];
+      const steps =
+        req.body.steps ||
+        req.body.instructions ||
+        [];
 
-    const ingredients =
-      Array.isArray(req.body.ingredients)
-        ? req.body.ingredients
-        : [];
+      const ingredients =
+        Array.isArray(req.body.ingredients)
+          ? req.body.ingredients
+          : [];
 
-    const recipe = new Recipe({
-      title,
-      description: req.body.description || "",
-      ingredients,
-      steps,
-      cooking_time: parseInt(req.body.cooking_time) || null,
-      servings: req.body.servings || null,
-      difficulty: req.body.difficulty || "",
-      category: req.body.category || "",
-      cuisine: req.body.cuisine || "",
-      image_url: req.body.image_url || "",
-      author: req.body.author_id || null
-    });
+      const recipe = new Recipe({
+        title,
+        description: req.body.description || "",
+        ingredients,
+        steps,
+        cooking_time: parseInt(req.body.cooking_time) || null,
+        servings: req.body.servings || null,
+        difficulty: req.body.difficulty || "",
+        category: req.body.category || "",
+        cuisine: req.body.cuisine || "",
+        image_url: req.body.image_url || "",
+        author: req.body.author_id || null
+      });
 
-    await recipe.save();
+      await recipe.save();
 
-    res.status(201).json(recipe);
+      res.status(201).json(recipe);
 
-  } catch (err) {
-    console.error("Recipe creation error:", err);
+    } catch (err) {
+      console.error("Recipe creation error:", err);
 
-    res.status(500).json({
-      error: "Failed to create recipe",
-      details: err.message
-    });
-  }
-});
+      res.status(500).json({
+        error: "Failed to create recipe",
+        details: err.message
+      });
+    }
+  });
 
   app.post("/api/recipes/:id/favorite", authenticate, async (req, res) => {
     try {
@@ -344,54 +344,54 @@ async function startServer() {
   });
 
   app.post("/api/recipes/:id/rate", authenticate, async (req, res) => {
-  try {
-    const recipeId = req.params.id;
-    const userId = req.user.id;
-    const { rating, comment } = req.body;
+    try {
+      const recipeId = req.params.id;
+      const userId = req.user.id;
+      const { rating, comment } = req.body;
 
-    const recipe = await Recipe.findById(recipeId);
+      const recipe = await Recipe.findById(recipeId);
 
-    if (!recipe) {
-      return res.status(404).json({ error: "Recipe not found" });
+      if (!recipe) {
+        return res.status(404).json({ error: "Recipe not found" });
+      }
+
+      // Ensure ratings array exists
+      if (!recipe.ratings) {
+        recipe.ratings = [];
+      }
+
+      const existingRating = recipe.ratings.find(
+        (r) => r.user && r.user.toString() === userId
+      );
+
+      if (existingRating) {
+        existingRating.rating = rating;
+        existingRating.comment = comment;
+      } else {
+        recipe.ratings.push({
+          user: userId,
+          rating,
+          comment
+        });
+      }
+
+      await recipe.save({ validateBeforeSave: false });
+
+      const updatedRecipe = await Recipe.findById(recipeId).populate(
+        "author",
+        "name"
+      );
+
+      res.json(updatedRecipe);
+
+    } catch (err) {
+      console.error("Rating error:", err);
+      res.status(500).json({
+        error: "Server error",
+        details: err.message
+      });
     }
-
-    // Ensure ratings array exists
-    if (!recipe.ratings) {
-      recipe.ratings = [];
-    }
-
-    const existingRating = recipe.ratings.find(
-      (r) => r.user && r.user.toString() === userId
-    );
-
-    if (existingRating) {
-  existingRating.rating = rating;
-  existingRating.comment = comment;
-} else {
-  recipe.ratings.push({
-    user: userId,
-    rating,
-    comment
   });
-}
-
-await recipe.save({ validateBeforeSave: false });
-
-    const updatedRecipe = await Recipe.findById(recipeId).populate(
-      "author",
-      "name"
-    );
-
-    res.json(updatedRecipe);
-
-  } catch (err) {
-    console.error("Rating error:", err);
-    res.status(500).json({
-      error: "Server error",
-      details: err.message
-    });
-  }
-});
 
 
   /* ===============================
@@ -406,8 +406,30 @@ await recipe.save({ validateBeforeSave: false });
         messages: [
           {
             role: "system",
-            content:
-              "You are a world-class luxury editorial chef. Generate a unique recipe and return JSON only.",
+            content: `
+You are a world-class luxury chef.
+
+Return ONLY valid JSON in this exact format:
+
+{
+  "title": "Recipe name",
+  "description": "Short description",
+  "ingredients": [
+    { "name": "ingredient name", "quantity": "amount" }
+  ],
+  "instructions": [
+    { "step": 1, "action": "instruction text" }
+  ],
+  "cooking_time": "30 minutes",
+  "servings": 4,
+  "difficulty": "Easy",
+  "category": "Dinner",
+  "cuisine": "Italian",
+  "image_url": ""
+}
+
+Do not include any text outside the JSON.
+`,
           },
           {
             role: "user",
@@ -418,9 +440,8 @@ await recipe.save({ validateBeforeSave: false });
         response_format: { type: "json_object" },
       });
 
-      const recipeData = JSON.parse(
-        completion.choices[0]?.message?.content || "{}"
-      );
+      const content = completion.choices[0]?.message?.content?.trim() || "{}";
+      const recipeData = JSON.parse(content);
 
       res.json(recipeData);
     } catch (err) {

@@ -245,73 +245,73 @@ export default function App() {
   };
 
   const generateAIRecipe = async () => {
-  setIsGenerating(true);
-  setIsAiModalOpen(false);
+    setIsGenerating(true);
+    setIsAiModalOpen(false);
 
-  try {
-    const res = await fetch(`${API_BASE}/api/ai/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: aiPrompt }),
-    });
+    try {
+      const res = await fetch(`${API_BASE}/api/ai/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
 
-    const recipeData = await res.json();
+      const recipeData = await res.json();
 
-    // 🔧 Transform AI recipe → backend schema
-    const payload = {
-  title:
-    recipeData.title ||
-    recipeData.name ||
-    recipeData.recipe_name ||
-    "Untitled Recipe",
+      // 🔧 Transform AI recipe → backend schema
+      const payload = {
+        title:
+          recipeData.title ||
+          recipeData.name ||
+          recipeData.recipe_name ||
+          "Untitled Recipe",
 
-  description: recipeData.description || "",
+        description: recipeData.description || "",
 
-  ingredients: Array.isArray(recipeData.ingredients)
-    ? recipeData.ingredients.map((i) => ({
-        name: i.name || i.ingredient || "",
-        quantity: i.quantity || "",
-      }))
-    : [],
+        ingredients: Array.isArray(recipeData.ingredients)
+          ? recipeData.ingredients.map((i) => ({
+            name: i.name || i.ingredient || "",
+            quantity: i.quantity || "",
+          }))
+          : [],
 
-  steps: Array.isArray(recipeData.instructions)
-    ? recipeData.instructions
-        .map((i) => (typeof i === "string" ? i : i.action))
-        .filter(Boolean)
-    : Array.isArray(recipeData.steps)
-    ? recipeData.steps.filter(Boolean)
-    : [],
+        steps: Array.isArray(recipeData.instructions)
+          ? recipeData.instructions
+            .map((i) => (typeof i === "string" ? i : i.action))
+            .filter(Boolean)
+          : Array.isArray(recipeData.steps)
+            ? recipeData.steps.filter(Boolean)
+            : [],
 
-  cooking_time: recipeData.cooking_time
-    ? parseInt(recipeData.cooking_time)
-    : null,
+        cooking_time: recipeData.cooking_time
+          ? parseInt(recipeData.cooking_time)
+          : null,
 
-  servings: recipeData.servings || null,
+        servings: recipeData.servings || null,
 
-  difficulty: recipeData.difficulty || "",
-  category: recipeData.category || "",
-  cuisine: recipeData.cuisine || "",
-  image_url: recipeData.image_url || "",
+        difficulty: recipeData.difficulty || "",
+        category: recipeData.category || "",
+        cuisine: recipeData.cuisine || "",
+        image_url: recipeData.image_url || "",
 
-  author_id: user?.id,
-};
+        author_id: user?.id,
+      };
 
-    const saveRes = await fetch(`${API_BASE}/api/recipes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+      const saveRes = await fetch(`${API_BASE}/api/recipes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    if (saveRes.ok) {
-      fetchRecipes();
-      setAiPrompt("");
+      if (saveRes.ok) {
+        fetchRecipes();
+        setAiPrompt("");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsGenerating(false);
     }
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setIsGenerating(false);
-  }
-};
+  };
 
   const addToShoppingList = (ingredients) => {
     setShoppingList((prev) => [...new Set([...prev, ...ingredients])]);
