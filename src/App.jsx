@@ -245,32 +245,62 @@ export default function App() {
   };
 
   const generateAIRecipe = async () => {
-    setIsGenerating(true);
-    setIsAiModalOpen(false);
-    try {
-      const res = await fetch(`${API_BASE}/api/ai/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: aiPrompt }),
-      });
-      const recipeData = await res.json();
+  setIsGenerating(true);
+  setIsAiModalOpen(false);
 
-      const saveRes = await fetch(`${API_BASE}/api/recipes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...recipeData, author_id: user?.id }),
-      });
+  try {
+    const res = await fetch(`${API_BASE}/api/ai/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: aiPrompt }),
+    });
 
-      if (saveRes.ok) {
-        fetchRecipes();
-        setAiPrompt("");
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsGenerating(false);
+    const recipeData = await res.json();
+
+    // 🔧 Transform AI recipe → backend schema
+    const payload = {
+      title: recipeData.title || recipeData.name || recipeData.recipe_name,
+
+      description: recipeData.description || "",
+
+      ingredients: Array.isArray(recipeData.ingredients)
+        ? recipeData.ingredients
+        : Object.values(recipeData.ingredients || {}),
+
+      steps: recipeData.steps
+        ? recipeData.steps
+        : recipeData.instructions?.map((i) =>
+            typeof i === "string" ? i : i.action
+          ) || [],
+
+      cooking_time: parseInt(recipeData.cooking_time) || null,
+
+      servings: recipeData.servings || null,
+
+      difficulty: recipeData.difficulty || "",
+      category: recipeData.category || "",
+      cuisine: recipeData.cuisine || "",
+      image_url: recipeData.image_url || "",
+
+      author_id: user?.id,
+    };
+
+    const saveRes = await fetch(`${API_BASE}/api/recipes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (saveRes.ok) {
+      fetchRecipes();
+      setAiPrompt("");
     }
-  };
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setIsGenerating(false);
+  }
+};
 
   const addToShoppingList = (ingredients) => {
     setShoppingList((prev) => [...new Set([...prev, ...ingredients])]);

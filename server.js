@@ -73,7 +73,8 @@ const RecipeSchema = new mongoose.Schema({
   cuisine: String,
   image_url: String,
   author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  ratings: [
+  ratings: {
+  type: [
     {
       user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       rating: Number,
@@ -81,6 +82,8 @@ const RecipeSchema = new mongoose.Schema({
       date: { type: Date, default: Date.now },
     },
   ],
+  default: [],
+},
   created_at: { type: Date, default: Date.now },
 });
 
@@ -262,37 +265,35 @@ async function startServer() {
     }
   });
 
-  app.post("/api/recipes", async (req, res) => {
+ app.post("/api/recipes", async (req, res) => {
   try {
 
-    const title = req.body.title || req.body.recipe_name;
+    const title =
+      req.body.title ||
+      req.body.recipe_name ||
+      req.body.name;
 
     const steps =
       req.body.steps ||
-      (req.body.instructions
-        ? req.body.instructions.map((i) => i.action)
-        : []);
+      req.body.instructions ||
+      [];
 
-    const cooking_time = req.body.cooking_time
-      ? parseInt(req.body.cooking_time)
-      : null;
+    const ingredients =
+      Array.isArray(req.body.ingredients)
+        ? req.body.ingredients
+        : [];
 
     const recipe = new Recipe({
       title,
       description: req.body.description || "",
-
-      ingredients: req.body.ingredients || [],
-
+      ingredients,
       steps,
-
-      cooking_time,
-
+      cooking_time: parseInt(req.body.cooking_time) || null,
       servings: req.body.servings || null,
       difficulty: req.body.difficulty || "",
       category: req.body.category || "",
       cuisine: req.body.cuisine || "",
       image_url: req.body.image_url || "",
-
       author: req.body.author_id || null
     });
 
@@ -302,6 +303,7 @@ async function startServer() {
 
   } catch (err) {
     console.error("Recipe creation error:", err);
+
     res.status(500).json({
       error: "Failed to create recipe",
       details: err.message
@@ -341,45 +343,54 @@ async function startServer() {
   });
 
   app.post("/api/recipes/:id/rate", authenticate, async (req, res) => {
-    try {
-      const recipeId = req.params.id;
-      const userId = req.user.id;
-      const { rating, comment } = req.body;
+  try {
+    const recipeId = req.params.id;
+    const userId = req.user.id;
+    const { rating, comment } = req.body;
 
-      const recipe = await Recipe.findById(recipeId);
+    const recipe = await Recipe.findById(recipeId);
 
-      if (!recipe) {
-        return res.status(404).json({ error: "Recipe not found" });
-      }
-
-      const existingRating = recipe.ratings.find(
-        (r) => r.user.toString() === userId
-      );
-
-      if (existingRating) {
-        existingRating.rating = rating;
-        existingRating.comment = comment;
-      } else {
-        recipe.ratings.push({
-          user: userId,
-          rating,
-          comment,
-        });
-      }
-
-      await recipe.save();
-
-      const updatedRecipe = await Recipe.findById(recipeId).populate(
-        "author",
-        "name"
-      );
-
-      res.json(updatedRecipe);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Server error" });
+    if (!recipe) {
+      return res.status(404).json({ error: "Recipe not found" });
     }
-  });
+
+    // Ensure ratings array exists
+    if (!recipe.ratings) {
+      recipe.ratings = [];
+    }
+
+    const existingRating = recipe.ratings.find(
+      (r) => r.user && r.user.toString() === userId
+    );
+
+    if (existingRating) {
+      existingRating.rating = rating;
+      existingRating.comment = comment;
+    } else {
+      recipe.ratings.push({
+        user: userId,
+        rating,
+        comment,
+      });
+    }
+
+    await recipe.save();
+
+    const updatedRecipe = await Recipe.findById(recipeId).populate(
+      "author",
+      "name"
+    );
+
+    res.json(updatedRecipe);
+
+  } catch (err) {
+    console.error("Rating error:", err);
+    res.status(500).json({
+      error: "Server error",
+      details: err.message
+    });
+  }
+});
 
 
   /* ===============================
