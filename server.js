@@ -271,7 +271,8 @@ async function startServer() {
     const title =
       req.body.title ||
       req.body.recipe_name ||
-      req.body.name;
+      req.body.name ||
+      "Untitled Recipe";
 
     const steps =
       req.body.steps ||

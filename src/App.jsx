@@ -259,31 +259,42 @@ export default function App() {
 
     // 🔧 Transform AI recipe → backend schema
     const payload = {
-      title: recipeData.title || recipeData.name || recipeData.recipe_name,
+  title:
+    recipeData.title ||
+    recipeData.name ||
+    recipeData.recipe_name ||
+    "Untitled Recipe",
 
-      description: recipeData.description || "",
+  description: recipeData.description || "",
 
-      ingredients: Array.isArray(recipeData.ingredients)
-        ? recipeData.ingredients
-        : Object.values(recipeData.ingredients || {}),
+  ingredients: Array.isArray(recipeData.ingredients)
+    ? recipeData.ingredients.map((i) => ({
+        name: i.name || i.ingredient || "",
+        quantity: i.quantity || "",
+      }))
+    : [],
 
-      steps: recipeData.steps
-        ? recipeData.steps
-        : recipeData.instructions?.map((i) =>
-            typeof i === "string" ? i : i.action
-          ) || [],
+  steps: Array.isArray(recipeData.instructions)
+    ? recipeData.instructions
+        .map((i) => (typeof i === "string" ? i : i.action))
+        .filter(Boolean)
+    : Array.isArray(recipeData.steps)
+    ? recipeData.steps.filter(Boolean)
+    : [],
 
-      cooking_time: parseInt(recipeData.cooking_time) || null,
+  cooking_time: recipeData.cooking_time
+    ? parseInt(recipeData.cooking_time)
+    : null,
 
-      servings: recipeData.servings || null,
+  servings: recipeData.servings || null,
 
-      difficulty: recipeData.difficulty || "",
-      category: recipeData.category || "",
-      cuisine: recipeData.cuisine || "",
-      image_url: recipeData.image_url || "",
+  difficulty: recipeData.difficulty || "",
+  category: recipeData.category || "",
+  cuisine: recipeData.cuisine || "",
+  image_url: recipeData.image_url || "",
 
-      author_id: user?.id,
-    };
+  author_id: user?.id,
+};
 
     const saveRes = await fetch(`${API_BASE}/api/recipes`, {
       method: "POST",
